@@ -1,4 +1,4 @@
-function [A_coll, b_coll] = BVC_constraints_ref(X0_ref, d, i, rmin, order, E1, E2, x_length)
+function [A_coll, b_coll] = BVC_constraints_ref(X0_ref, d, i, rmin, order, E1, E2, x_length, drop_comms)
 
 % Construct the hyperspace constraints that will limit the first
 % segment of the Bezier curve to lie within the BVC.
@@ -9,20 +9,20 @@ idx = 1;
 A_coll = zeros(dh*(N-1), x_length);
 b_coll = zeros(dh*(N-1), 1);
 for j = 1:N
-   if (i~= j)
+   if (i ~= j)
        p_j = X0_ref(:, 1, j);
        dist = norm(E1(:,:,j)*(p_j-p_i),order(j));
-       
+
        % Skip neighbour if it's far away
        if dist > 3 * rmin(j)
            continue
        end
-       
+
        differ = (E2(:,:,j)*(p_i-p_j).^(order(j)-1))'; % Transpose of the difference
-       
+
        % Right side of inequality constraint
        r = dist^(order(j)-1)*((rmin(j)) - dist + differ*p_i/(dist^(order(j)-1)));
-       
+
        % the diff 1x3 vector must multiply all the control points of the
        % first segment of the Bezier curve, except the first one
        for  k = 1:dh
@@ -31,4 +31,9 @@ for j = 1:N
        end
        idx = idx + 1;
    end
+end
+
+if drop_comms
+    b_coll = [b_coll; b_coll; b_coll];
+    A_coll = [A_coll; circshift(A_coll,[0, x_length/3]); circshift(A_coll,[0, 2*x_length/3])];
 end
